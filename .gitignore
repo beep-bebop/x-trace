@@ -1,0 +1,31 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Project state (contains login session & DB — never commit)
+.x-trace/
+.env
+
+# Playwright browser binaries
+.playwright_browsers/
+
+# IDE
+.idea/
+.vscode/
+.trae/
+*.swp

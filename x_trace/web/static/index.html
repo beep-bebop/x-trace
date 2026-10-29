@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-Trace | Stock Prediction Backtester</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">X</div>
+            <div class="logo-text">
+                <span class="logo-title">X-Trace</span>
+                <span class="logo-sub">Stock Prediction Tracker</span>
+            </div>
+        </div>
+        <nav class="nav">
+            <a href="#" class="nav-item active" data-view="leaderboard">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-8 4 4 4-6"/></svg>
+                <span>Leaderboard</span>
+            </a>
+            <a href="#" class="nav-item" data-view="bloggers">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <span>Bloggers</span>
+            </a>
+            <a href="#" class="nav-item" data-view="run">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <span>Run Pipeline</span>
+            </a>
+            <a href="#" class="nav-item" data-view="reports">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>Reports</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="session-status" id="sessionStatus">
+                <div class="status-dot"></div>
+                <span>Checking session...</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main">
+        <!-- Leaderboard View -->
+        <section id="view-leaderboard" class="view active">
+            <div class="view-header">
+                <h1>Leaderboard</h1>
+                <p class="view-subtitle">Ranking all evaluated bloggers by composite score</p>
+                <button class="btn btn-primary" id="refreshLeaderboard">Refresh</button>
+            </div>
+            <div class="card">
+                <div class="table-wrapper">
+                    <table class="data-table" id="leaderboardTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Blogger</th>
+                                <th>Score</th>
+                                <th>Grade</th>
+                                <th>Sample</th>
+                                <th>Hit Rate</th>
+                                <th>Avg Return</th>
+                                <th>Sharpe</th>
+                                <th>Coverage</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboardBody">
+                            <tr><td colspan="9" class="empty-state">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bloggers View -->
+        <section id="view-bloggers" class="view">
+            <div class="view-header">
+                <h1>Bloggers</h1>
+                <p class="view-subtitle">All crawled bloggers in the database</p>
+            </div>
+            <div class="bloggers-grid" id="bloggersGrid"></div>
+        </section>
+
+        <!-- Detail View -->
+        <section id="view-detail" class="view">
+            <div class="view-header">
+                <a href="#" class="back-link" data-view="leaderboard">&larr; Back</a>
+                <h1 id="detailUsername">@username</h1>
+                <div class="detail-badges" id="detailBadges"></div>
+            </div>
+            <div class="detail-grid">
+                <div class="card card-score">
+                    <h3>Score Breakdown</h3>
+                    <div class="score-big" id="detailScore">--</div>
+                    <div class="score-grade" id="detailGrade">--</div>
+                    <canvas id="radarChart" width="300" height="300"></canvas>
+                </div>
+                <div class="card card-metrics">
+                    <h3>Per-Metric Breakdown</h3>
+                    <div id="metricsTable"></div>
+                </div>
+            </div>
+            <div class="detail-tabs">
+                <button class="tab-btn active" data-tab="predictions">Predictions</button>
+                <button class="tab-btn" data-tab="results">Backtest Results</button>
+                <button class="tab-btn" data-tab="tweets">Tweets</button>
+            </div>
+            <div class="card">
+                <div class="tab-content" id="tab-predictions">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead><tr><th>Date</th><th>Ticker</th><th>Direction</th><th>Type</th><th>Target</th><th>Confidence</th><th>Rationale</th></tr></thead>
+                            <tbody id="predictionsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-content hidden" id="tab-results">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead><tr><th>Window</th><th>Base Date</th><th>End Date</th><th>Ticker</th><th>Return %</th><th>Direction</th><th>Max DD</th><th>Max Runup</th><th>Alpha</th></tr></thead>
+                            <tbody id="resultsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-content hidden" id="tab-tweets">
+                    <div class="tweets-list" id="tweetsList"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Run Pipeline View -->
+        <section id="view-run" class="view">
+            <div class="view-header">
+                <h1>Run Pipeline</h1>
+                <p class="view-subtitle">Crawl &rarr; Analyze &rarr; Backtest &rarr; Score</p>
+            </div>
+            <div class="card run-card">
+                <form id="runForm">
+                    <div class="form-group">
+                        <label>Username (X handle without @)</label>
+                        <input type="text" id="runUsername" placeholder="e.g. RachelDashCS" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Start Date</label>
+                            <input type="date" id="runStart" required>
+                        </div>
+                        <div class="form-group">
+                            <label>End Date</label>
+                            <input type="date" id="runEnd" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Backtest Windows</label>
+                            <select id="runWindows">
+                                <option value="1m,3m" selected>1 month, 3 months</option>
+                                <option value="1w,1m">1 week, 1 month</option>
+                                <option value="1w,1m,3m">1 week, 1 month, 3 months</option>
+                                <option value="1m,3m,to_date">1 month, 3 months, to date</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Headless Mode</label>
+                            <select id="runHeadless">
+                                <option value="true" selected>Headless (faster)</option>
+                                <option value="false">Show Browser</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-large">Start Pipeline</button>
+                        <button type="button" class="btn btn-secondary" id="crawlOnlyBtn">Crawl Only</button>
+                        <button type="button" class="btn btn-secondary" id="analyzeOnlyBtn">Analyze Only</button>
+                        <button type="button" class="btn btn-secondary" id="backtestOnlyBtn">Backtest Only</button>
+                        <button type="button" class="btn btn-secondary" id="scoreOnlyBtn">Score Only</button>
+                    </div>
+                </form>
+                <div class="job-status hidden" id="jobStatus">
+                    <div class="job-status-header">
+                        <span class="job-spinner"></span>
+                        <span id="jobStatusText">Running...</span>
+                    </div>
+                    <div class="job-progress" id="jobResult"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Reports View -->
+        <section id="view-reports" class="view">
+            <div class="view-header">
+                <h1>Reports</h1>
+                <p class="view-subtitle">Browse and preview generated report files</p>
+                <div class="reports-controls">
+                    <input type="text" id="reportSearch" class="search-input" placeholder="Search by blogger name...">
+                    <button class="btn btn-primary" id="refreshReports">Refresh</button>
+                </div>
+            </div>
+            <div class="report-tabs">
+                <button class="report-tab-btn active" data-rtab="blogger">Blogger Reports</button>
+                <button class="report-tab-btn" data-rtab="leaderboard">Leaderboard Reports</button>
+            </div>
+            <div class="report-tab-content" id="rtab-blogger">
+                <div class="reports-grid" id="bloggerReportsGrid"></div>
+            </div>
+            <div class="report-tab-content hidden" id="rtab-leaderboard">
+                <div class="reports-grid" id="leaderboardReportsGrid"></div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<!-- Report Viewer Modal -->
+<div class="modal-overlay hidden" id="reportModal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3 id="modalTitle">Report</h3>
+            <button class="modal-close" id="modalClose">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+    </div>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>

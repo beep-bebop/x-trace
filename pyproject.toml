@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "x-trace"
+version = "0.1.0"
+description = "Backtest and score X (Twitter) bloggers' stock predictions"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "playwright>=1.45",
+    "langchain-openai>=0.2",
+    "langchain-core>=0.3",
+    "pydantic>=2.7",
+    "yfinance>=0.2.40",
+    "requests>=2.31",
+    "pandas>=2.0",
+    "sqlmodel>=0.0.21",
+    "typer>=0.12",
+    "python-dateutil>=2.9",
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.12",
+]
+
+[project.scripts]
+x-trace = "x_trace.cli.main:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["x_trace*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
